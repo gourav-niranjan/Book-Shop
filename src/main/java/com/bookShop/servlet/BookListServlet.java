@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,72 +16,74 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet("/BookList")
 public class BookListServlet extends HttpServlet {
 
-	private static final String query = "SELECT ID, BookName, BookEdition, BookPrice FROM bookdata";
+    // PostgreSQL-safe query (lowercase column names)
+    private static final String query =
+        "SELECT id, bookname, bookedition, bookprice FROM bookdata";
 
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		//get Printwriter
-		PrintWriter pw = resp.getWriter();
-		
-		//get ContentType
-		resp.setContentType("text/html");
-		
-		
-		
-		//Load JDBC 
-		try {
-			Class.forName("org.postgresql.Driver");
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
-		}catch(ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		//Generate a connection
-		try {
-			String host = System.getenv("DB_HOST");
-			String db   = System.getenv("DB_NAME");
-			String user = System.getenv("DB_USER");
-			String pass = System.getenv("DB_PASSWORD");
-			String port = System.getenv("DB_PORT");
+        resp.setContentType("text/html");
+        PrintWriter pw = resp.getWriter();
 
-			String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
+        // Load PostgreSQL driver
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
-			Connection c = DriverManager.getConnection(url, user, pass);
+        // Create DB connection
+        try {
+            String host = System.getenv("DB_HOST");
+            String db   = System.getenv("DB_NAME");
+            String user = System.getenv("DB_USER");
+            String pass = System.getenv("DB_PASSWORD");
+            String port = System.getenv("DB_PORT");
 
-			PreparedStatement ps = c.prepareStatement(query);
-			ResultSet rs = ps.executeQuery();
-			pw.println("<table border='1' align='center'>");
-			pw.println("<tr>");
-			pw.println("<th> Book ID </th>");
-			pw.println("<th> Book Name </th>");
-			pw.println("<th> Book Edition </th>");
-   			pw.println("<th> Book Price </th>");
-   			pw.println("<th> Edit </th>");
-   			pw.println("<th> Delete </th>");
+            String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
 
-   			pw.println("</tr>");
-   			while(rs.next()) {
-   				pw.println("<tr>");
-   				pw.println("<td>" + rs.getInt(1) + "</td>");
-   				pw.println("<td>" + rs.getString(2) + "</td>");
-   				pw.println("<td>" + rs.getString(3) + "</td>");
-   				pw.println("<td>" + rs.getFloat(4) + "</td>");
-   				pw.println("<td> <a href= 'editScreen?id=" + rs.getInt(1) + "'>Edit</a> ");
-   				pw.println("<td> <a href= 'deleteurl?id=" + rs.getInt(1) + "'>Delete</a> ");
+            Connection c = DriverManager.getConnection(url, user, pass);
 
-   				pw.println("</tr>");
-   				 
-   			}
-			pw.println("</table>");	
-			
-		}catch(SQLException e) {
-			e.printStackTrace();
-		}
-		pw.println("<a href= \"index.html\">HOME</a>");
-	}
+            PreparedStatement ps = c.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
 
-	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		doGet(req, resp);
-	}
+            pw.println("<table border='1' align='center'>");
+            pw.println("<tr>");
+            pw.println("<th>Book ID</th>");
+            pw.println("<th>Book Name</th>");
+            pw.println("<th>Book Edition</th>");
+            pw.println("<th>Book Price</th>");
+            pw.println("<th>Edit</th>");
+            pw.println("<th>Delete</th>");
+            pw.println("</tr>");
+
+            while (rs.next()) {
+                pw.println("<tr>");
+                pw.println("<td>" + rs.getInt("id") + "</td>");
+                pw.println("<td>" + rs.getString("bookname") + "</td>");
+                pw.println("<td>" + rs.getString("bookedition") + "</td>");
+                pw.println("<td>" + rs.getFloat("bookprice") + "</td>");
+                pw.println("<td><a href='editScreen?id=" + rs.getInt("id") + "'>Edit</a></td>");
+                pw.println("<td><a href='deleteurl?id=" + rs.getInt("id") + "'>Delete</a></td>");
+                pw.println("</tr>");
+            }
+
+            pw.println("</table>");
+            c.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            pw.println("<h3>Error loading book list</h3>");
+        }
+
+        pw.println("<br><a href='/'>HOME</a>");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        doGet(req, resp);
+    }
 }

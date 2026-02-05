@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -16,79 +15,92 @@ import javax.servlet.http.HttpServletResponse;
 
 @WebServlet("/editScreen")
 public class EditScreenServlet extends HttpServlet {
-	private static final String query = "SELECT BookName, BookEdition, BookPrice FROM bookdata WHERE ID = ?";
 
-	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		//get Printwriter
-		PrintWriter pw = resp.getWriter();
-		
-		// get the Id
-		int id = Integer.parseInt(req.getParameter("id"));
-		//get ContentType
-		resp.setContentType("text/html");
-		
-		
-		
-		//Load JDBC 
-		try {
-			Class.forName("org.postgresql.Driver");
+    // PostgreSQL-safe query
+    private static final String query =
+        "SELECT bookname, bookedition, bookprice FROM bookdata WHERE id = ?";
 
-		}catch(ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		//Generate a connection
-		try {
-			String host = System.getenv("DB_HOST");
-			String db   = System.getenv("DB_NAME");
-			String user = System.getenv("DB_USER");
-			String pass = System.getenv("DB_PASSWORD");
-			String port = System.getenv("DB_PORT");
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
-			String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
+        resp.setContentType("text/html");
+        PrintWriter pw = resp.getWriter();
 
-			Connection c = DriverManager.getConnection(url, user, pass);
+        String idStr = req.getParameter("id");
+        if (idStr == null || idStr.trim().isEmpty()) {
+            pw.println("<h3>Invalid book ID</h3>");
+            return;
+        }
 
-			PreparedStatement ps = c.prepareStatement(query);
-			ps.setInt(1, id);
-			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
-			    pw.println("<form action='editurl' method='post'>");
-			    pw.println("<input type='hidden' name='id' value='" + id + "'>");
+        int id = Integer.parseInt(idStr);
 
-			    pw.println("<table align='center'>");
+        // Load PostgreSQL driver
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
 
-			    pw.println("<tr><td>Book Name</td>");
-			    pw.println("<td><input type='text' name='BookName' value='" + rs.getString(1) + "'></td></tr>");
+        try {
+            String host = System.getenv("DB_HOST");
+            String db   = System.getenv("DB_NAME");
+            String user = System.getenv("DB_USER");
+            String pass = System.getenv("DB_PASSWORD");
+            String port = System.getenv("DB_PORT");
 
-			    pw.println("<tr><td>Book Edition</td>");
-			    pw.println("<td><input type='text' name='BookEdition' value='" + rs.getString(2) + "'></td></tr>");
+            String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
 
-			    pw.println("<tr><td>Book Price</td>");
-			    pw.println("<td><input type='text' name='BookPrice' value='" + rs.getFloat(3) + "'></td></tr>");
+            Connection c = DriverManager.getConnection(url, user, pass);
+            PreparedStatement ps = c.prepareStatement(query);
+            ps.setInt(1, id);
 
-			    pw.println("<tr><td colspan='2'>");
-			    pw.println("<input type='submit' value='Edit'>");
-			    pw.println("<input type='reset' value='Cancel'>");
-			    pw.println("</td></tr>");
+            ResultSet rs = ps.executeQuery();
 
-			    pw.println("</table>");
-			    pw.println("</form>");
-			}
+            if (rs.next()) {
+                pw.println("<form action='editurl' method='post'>");
+                pw.println("<input type='hidden' name='id' value='" + id + "'>");
 
+                pw.println("<table align='center'>");
 
-			
-			
-		}catch(SQLException e) {
-			e.printStackTrace();
-		}
-		pw.println("<a href= \"index.html\">HOME</a>");
-	}
+                pw.println("<tr><td>Book Name</td>");
+                pw.println("<td><input type='text' name='BookName' value='" +
+                           rs.getString("bookname") + "'></td></tr>");
 
-	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		doGet(req, resp);
-	}
+                pw.println("<tr><td>Book Edition</td>");
+                pw.println("<td><input type='text' name='BookEdition' value='" +
+                           rs.getString("bookedition") + "'></td></tr>");
 
+                pw.println("<tr><td>Book Price</td>");
+                pw.println("<td><input type='text' name='BookPrice' value='" +
+                           rs.getFloat("bookprice") + "'></td></tr>");
+
+                pw.println("<tr><td colspan='2'>");
+                pw.println("<input type='submit' value='Edit'>");
+                pw.println("<input type='reset' value='Cancel'>");
+                pw.println("</td></tr>");
+
+                pw.println("</table>");
+                pw.println("</form>");
+            } else {
+                pw.println("<h3>No book found for given ID</h3>");
+            }
+
+            rs.close();
+            ps.close();
+            c.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            pw.println("<h3>Error loading edit screen</h3>");
+        }
+
+        pw.println("<br><a href='/'>HOME</a>");
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+        doGet(req, resp);
+    }
 }
