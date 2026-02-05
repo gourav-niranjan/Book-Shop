@@ -1,0 +1,68 @@
+package com.bookShop.servlet;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+@WebServlet("/register")
+public class RegisterServlet extends HttpServlet {
+	
+	private static final String query = "INSERT INTO bookdata(BookName, BookEdition, BookPrice) VALUES(?, ?, ?)";
+
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		//get Printwriter
+		PrintWriter pw = resp.getWriter();
+		
+		//get ContentType
+		resp.setContentType("text/html");
+		
+		//Get the book Data
+		String bookName = req.getParameter("bookName");
+		String bookEdition = req.getParameter("bookEdition");
+		float bookPrice = Float.parseFloat(req.getParameter("bookPrice"));
+		
+		//Load JDBC 
+		try {
+			Class.forName("com.mysql.cj.jdbc.Driver");
+		}catch(ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		//Generate a connection
+		try {
+			Connection c = DriverManager.getConnection("jdbc:mysql:///book", "root", "pass123");
+			PreparedStatement ps = c.prepareStatement(query);
+			ps.setString(1, bookName);
+			ps.setString(2, bookEdition);
+			ps.setFloat(3, bookPrice);
+			int count = ps.executeUpdate();
+			if(count==1) {
+				pw.println("<h3> Record Registered Successfully!!!</h3>");
+			}else {
+				pw.println("<h3> Record not Registered!!!</h3>");
+			}
+				
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		pw.println("<a href= \"index.html\">HOME</a>");
+		pw.println("<br>");
+		pw.println("<a href= \"BookList\">Book List</a>");
+	}
+
+	@Override
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		doGet(req, resp);
+	}
+
+}
