@@ -76,8 +76,10 @@ public class RegisterServlet extends HttpServlet {
             c.close();
 
         } catch (Exception e) {
-            e.printStackTrace();
-            pw.println("<h3>Error registering record</h3>");
+        	 pw.println("<h3>ERROR DETAILS</h3>");
+        	    pw.println("<pre>");
+        	    e.printStackTrace(pw);
+        	    pw.println("</pre>");
         }
 
         pw.println("<br><a href='/'>HOME</a>");
