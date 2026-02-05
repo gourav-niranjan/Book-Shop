@@ -31,14 +31,24 @@ public class BookListServlet extends HttpServlet {
 		
 		//Load JDBC 
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
+			Class.forName("org.postgresql.Driver");
+
 		}catch(ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 		
 		//Generate a connection
 		try {
-			Connection c = DriverManager.getConnection("jdbc:mysql:///book", "root", "pass123");
+			String host = System.getenv("DB_HOST");
+			String db   = System.getenv("DB_NAME");
+			String user = System.getenv("DB_USER");
+			String pass = System.getenv("DB_PASSWORD");
+			String port = System.getenv("DB_PORT");
+
+			String url = "jdbc:postgresql://" + host + ":" + port + "/" + db;
+
+			Connection c = DriverManager.getConnection(url, user, pass);
+
 			PreparedStatement ps = c.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			pw.println("<table border='1' align='center'>");
